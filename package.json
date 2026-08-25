@@ -1,0 +1,16 @@
+{
+  "name": "tienda-super-wai",
+  "version": "1.0.0",
+  "description": "Sistema de Registro de Asistencia - Tienda Super Wai",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "init-db": "node database/init.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "mysql2": "^3.6.5"
+  }
+}

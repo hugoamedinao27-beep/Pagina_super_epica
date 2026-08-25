@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Control de Asistencia</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h2>Control de Asistencia</h2>
+        <div class="user-info">
+            <span id="userName"></span>
+            <button class="btn" id="btnLogout">Cerrar Sesion</button>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="attendance-card">
+            <h3>Marcar Asistencia</h3>
+            <div class="time" id="currentTime">--:--:--</div>
+            <div class="date" id="currentDate"></div>
+
+            <div class="attendance-buttons">
+                <button class="btn btn-checkin" id="btnEntrada">Entrada</button>
+                <button class="btn btn-checkout" id="btnSalida">Salida</button>
+            </div>
+
+            <div class="status-section">
+                <h4>Registro del dia</h4>
+                <ul class="record-list" id="recordList">
+                    <li class="no-data">Sin registros hoy</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/dashboard.js"></script>
+</body>
+</html>

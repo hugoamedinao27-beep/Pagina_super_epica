@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Administracion - Tienda Super Wai</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h2>Panel de Administracion</h2>
+        <div class="user-info">
+            <span id="userName"></span>
+            <button class="btn" id="btnLogout">Cerrar Sesion</button>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="reportes">Reportes</button>
+            <button class="tab-btn" data-tab="usuarios">Gestionar Usuarios</button>
+        </div>
+
+        <div class="tab-content active" id="tab-reportes">
+            <div class="card">
+                <h3>Reporte de Entradas Atrasadas (despues de 9:30 AM)</h3>
+                <div class="report-controls">
+                    <div class="form-group">
+                        <label for="lateDate">Fecha</label>
+                        <input type="date" id="lateDate">
+                    </div>
+                    <button class="btn btn-primary btn-small" id="btnLateReport">Generar</button>
+                </div>
+                <table id="lateTable">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Llegada</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <p class="no-data" id="lateNoData">Seleccione una fecha y presione Generar</p>
+            </div>
+
+            <div class="card">
+                <h3>Reporte de Salidas Anticipadas (antes de 17:30 PM)</h3>
+                <div class="report-controls">
+                    <div class="form-group">
+                        <label for="earlyDate">Fecha</label>
+                        <input type="date" id="earlyDate">
+                    </div>
+                    <button class="btn btn-primary btn-small" id="btnEarlyReport">Generar</button>
+                </div>
+                <table id="earlyTable">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Salida</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <p class="no-data" id="earlyNoData">Seleccione una fecha y presione Generar</p>
+            </div>
+
+            <div class="card">
+                <h3>Reporte de Inasistencias</h3>
+                <div class="report-controls">
+                    <div class="form-group">
+                        <label for="absentDate">Fecha</label>
+                        <input type="date" id="absentDate">
+                    </div>
+                    <button class="btn btn-primary btn-small" id="btnAbsentReport">Generar</button>
+                </div>
+                <table id="absentTable">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <p class="no-data" id="absentNoData">Seleccione una fecha y presione Generar</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-usuarios">
+            <div class="card">
+                <h3>Usuarios del Sistema</h3>
+                <button class="btn btn-success btn-small" id="btnNewUser" style="margin-bottom: 16px">+ Crear Usuario</button>
+                <table id="usersTable">
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <h3 id="modalTitle">Crear Usuario</h3>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userNameInput">Nombre</label>
+                    <input type="text" id="userNameInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPass">Contrasena <span id="passHint"></span></label>
+                    <input type="password" id="userPass">
+                </div>
+                <div class="form-group">
+                    <label for="userRol">Rol</label>
+                    <select id="userRol">
+                        <option value="empleado">Empleado</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Tienda Super Wai</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Tienda Super Wai</h1>
+            <p class="subtitle">Sistema de Control de Asistencia</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo electronico</label>
+                    <input type="email" id="email" required placeholder="correo@tienda.com">
+                </div>
+                <div class="form-group">
+                    <label for="contrasena">Contrasena</label>
+                    <input type="password" id="contrasena" required placeholder="Ingrese su contrasena">
+                </div>
+                <button type="submit" class="btn btn-primary">Iniciar Sesion</button>
+                <p class="error-msg" id="errorMsg"></p>
+            </form>
+        </div>
+    </div>
+    <script src="../js/login.js"></script>
+</body>
+</html>
