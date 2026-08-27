@@ -27,6 +27,24 @@ function requireAdmin(req, res, next) {
 }
 
 // AUTH
+app.post('/api/register', async (req, res) => {
+    const { nombre, email, contrasena } = req.body;
+
+    if (!nombre || !email || !contrasena) {
+        return res.json({ success: false, message: 'Todos los campos son obligatorios' });
+    }
+
+    const [existing] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (existing.length > 0) {
+        return res.json({ success: false, message: 'Este correo ya esta registrado' });
+    }
+
+    const hash = await bcrypt.hash(contrasena, 10);
+    await pool.query('INSERT INTO usuarios (nombre, email, contrasena, rol) VALUES (?, ?, ?, ?)', [nombre, email, hash, 'empleado']);
+
+    res.json({ success: true, message: 'Cuenta creada correctamente' });
+});
+
 app.post('/api/login', async (req, res) => {
     const { email, contrasena } = req.body;
     const [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ? AND activo = TRUE', [email]);

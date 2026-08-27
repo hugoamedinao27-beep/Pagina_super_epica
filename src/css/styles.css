@@ -129,6 +129,32 @@ body {
     font-size: 13px;
 }
 
+.success-msg {
+    color: #2e7d32;
+    text-align: center;
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+    color: #666;
+}
+
+.login-footer a {
+    color: #1a237e;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
 /* HEADER */
 .header {
     background: #1a237e;
