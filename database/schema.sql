@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS tienda_super_wai;
 USE tienda_super_wai;
-
+DROP TABLE IF EXISTS `usuarios`;     
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     activo BOOLEAN DEFAULT TRUE,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+DROP TABLE IF EXISTS `Asistencia`;     
 CREATE TABLE IF NOT EXISTS asistencia (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,

@@ -7,7 +7,7 @@ async function initDatabase() {
     const connection = await mysql.createConnection({
         host: 'localhost',
         user: 'root',
-        password: 'Hamo1010'
+        password: 'Catdog10'
     });
 
     await connection.query('CREATE DATABASE IF NOT EXISTS tienda_super_wai');
