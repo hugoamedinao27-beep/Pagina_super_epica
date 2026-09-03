@@ -70,21 +70,61 @@ app.get('/api/current-user', requireAuth, (req, res) => {
 // ATTENDANCE
 app.post('/api/attendance/mark', requireAuth, async (req, res) => {
     const { tipo } = req.body;
-    const now = new Date();
-    const fechaHora = now.toISOString().slice(0, 19).replace('T', ' ');
+    const userId = req.session.user.id;
 
-    await pool.query(
-        'INSERT INTO asistencia (usuario_id, tipo, fecha_hora) VALUES (?, ?, ?)',
-        [req.session.user.id, tipo, fechaHora]
-    );
-    res.json({ success: true, message: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} registrada`, fecha_hora: fechaHora });
+    try {
+        // 1. REGLA: Solo 1 entrada y 1 salida por día
+        // Le pasamos la variable "tipo" a la consulta SQL para que valide dinámicamente
+        const [registrosHoy] = await pool.query(
+            "SELECT id FROM asistencia WHERE usuario_id = ? AND tipo = ? AND DATE(fecha_hora) = CURDATE()",
+            [userId, tipo]
+        );
+        
+        if (registrosHoy.length > 0) {
+            return res.json({ 
+                success: false, 
+                // El mensaje cambiará automáticamente según el botón que presionó
+                message: `Ya registraste tu ${tipo} el día de hoy.` 
+            });
+        }
+
+        // 2. REGLA: Validación Anti-Spam (1 minuto de diferencia)
+        // Esto evita que marquen "Entrada" y casi instantáneamente marquen "Salida" por error
+        const [rows] = await pool.query(
+            'SELECT TIMESTAMPDIFF(SECOND, fecha_hora, NOW()) as segundos FROM asistencia WHERE usuario_id = ? ORDER BY id DESC LIMIT 1',
+            [userId]
+        );
+
+        if (rows.length > 0) {
+            const segundos = rows[0].segundos;
+            if (segundos >= 0 && segundos < 60) {
+                return res.json({ 
+                    success: false, 
+                    message: 'Espera al menos 1 minuto antes de volver a marcar.' 
+                });
+            }
+        }
+
+        // 3. Registrar Asistencia
+        await pool.query(
+            'INSERT INTO asistencia (usuario_id, tipo, fecha_hora) VALUES (?, ?, NOW())',
+            [userId, tipo]
+        );
+        
+        res.json({ success: true, message: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} registrada` });
+
+    } catch (error) {
+        console.error('Error bd:', error);
+        res.json({ success: false, message: 'Error al marcar asistencia.' });
+    }
 });
 
 app.get('/api/attendance/status', requireAuth, async (req, res) => {
-    const today = new Date().toISOString().slice(0, 10);
+    // 4. Cambiamos la validación. Ya no usamos el reloj de JavaScript, 
+    // usamos CURDATE() para que MySQL nos traiga los datos de "HOY" según su propio reloj local.
     const [rows] = await pool.query(
-        'SELECT tipo, fecha_hora FROM asistencia WHERE usuario_id = ? AND DATE(fecha_hora) = ? ORDER BY fecha_hora',
-        [req.session.user.id, today]
+        'SELECT tipo, fecha_hora FROM asistencia WHERE usuario_id = ? AND DATE(fecha_hora) = CURDATE() ORDER BY fecha_hora',
+        [req.session.user.id]
     );
     res.json({ records: rows });
 });
