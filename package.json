@@ -5,7 +5,11 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
+    "dev": "node --watch main.js",
     "init-db": "node database/init.js"
+  },
+  "engines": {
+    "node": ">=20.12"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

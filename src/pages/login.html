@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Tienda Super Wai</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
@@ -12,50 +13,16 @@
             <p class="subtitle">Sistema de Control de Asistencia</p>
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="email">Correo electronico</label>
-                    <input type="email" id="email" required placeholder="correo@tienda.com">
+                    <label for="email">Correo electrónico</label>
+                    <input type="email" id="email" required autocomplete="username" placeholder="correo@tienda.com">
                 </div>
                 <div class="form-group">
-                    <label for="contrasena">Contrasena</label>
-                    <input type="password" id="contrasena" required placeholder="Ingrese su contrasena">
+                    <label for="contrasena">Contraseña</label>
+                    <input type="password" id="contrasena" required autocomplete="current-password" placeholder="Ingrese su contraseña">
                 </div>
-                <button type="submit" class="btn btn-primary">Iniciar Sesion</button>
-                <p class="error-msg" id="errorMsg"></p>
+                <button type="submit" class="btn btn-primary" id="btnLogin">Iniciar sesión</button>
+                <p class="error-msg" id="errorMsg" role="alert" aria-live="polite"></p>
             </form>
-            <div class="login-footer">
-                <p>No tienes cuenta? <a href="#" id="showRegister">Registrate aqui</a></p>
-            </div>
-        </div>
-    </div>
-
-    <div class="login-container" id="registerSection" style="display:none;">
-        <div class="login-box">
-            <h1>Crear Cuenta</h1>
-            <p class="subtitle">Registrate como empleado</p>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="regNombre">Nombre completo</label>
-                    <input type="text" id="regNombre" required placeholder="Tu nombre">
-                </div>
-                <div class="form-group">
-                    <label for="regEmail">Correo electronico</label>
-                    <input type="email" id="regEmail" required placeholder="correo@ejemplo.com">
-                </div>
-                <div class="form-group">
-                    <label for="regContrasena">Contrasena</label>
-                    <input type="password" id="regContrasena" required placeholder="Crea una contrasena">
-                </div>
-                <div class="form-group">
-                    <label for="regContrasena2">Confirmar contrasena</label>
-                    <input type="password" id="regContrasena2" required placeholder="Repite tu contrasena">
-                </div>
-                <button type="submit" class="btn btn-primary">Crear Cuenta</button>
-                <p class="error-msg" id="registerError"></p>
-                <p class="success-msg" id="registerSuccess"></p>
-            </form>
-            <div class="login-footer">
-                <p>Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesion</a></p>
-            </div>
         </div>
     </div>
 
