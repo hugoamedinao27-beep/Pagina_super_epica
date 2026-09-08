@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard - Control de Asistencia</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
@@ -10,7 +11,7 @@
         <h2>Control de Asistencia</h2>
         <div class="user-info">
             <span id="userName"></span>
-            <button class="btn" id="btnLogout">Cerrar Sesion</button>
+            <button type="button" class="btn" id="btnLogout">Cerrar sesión</button>
         </div>
     </div>
 
@@ -21,12 +22,12 @@
             <div class="date" id="currentDate"></div>
 
             <div class="attendance-buttons">
-                <button class="btn btn-checkin" id="btnEntrada">Entrada</button>
-                <button class="btn btn-checkout" id="btnSalida">Salida</button>
+                <button type="button" class="btn btn-checkin" id="btnEntrada">Entrada</button>
+                <button type="button" class="btn btn-checkout" id="btnSalida">Salida</button>
             </div>
 
             <div class="status-section">
-                <h4>Registro del dia</h4>
+                <h4>Registro del día</h4>
                 <ul class="record-list" id="recordList">
                     <li class="no-data">Sin registros hoy</li>
                 </ul>

@@ -50,12 +50,21 @@ const config = {
         maxAgeMs: readInteger('SESSION_MAX_AGE_MS', 24 * 60 * 60 * 1000),
         secureCookie: readBoolean('SESSION_COOKIE_SECURE', nodeEnv === 'production')
     },
+    business: {
+        timeZone: process.env.BUSINESS_TIMEZONE || 'America/Santiago'
+    },
     admin: {
         name: process.env.ADMIN_NAME || 'Administrador',
         email: process.env.ADMIN_EMAIL || '',
         password: process.env.ADMIN_PASSWORD || ''
     }
 };
+
+try {
+    new Intl.DateTimeFormat('es-CL', { timeZone: config.business.timeZone }).format();
+} catch (error) {
+    throw new Error('BUSINESS_TIMEZONE no corresponde a una zona horaria válida.');
+}
 
 if (!configuredSessionSecret && nodeEnv !== 'test') {
     console.warn('SESSION_SECRET no está configurado; se usará un secreto temporal durante esta ejecución.');

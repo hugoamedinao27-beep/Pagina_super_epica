@@ -122,6 +122,11 @@ body {
     font-size: 12px;
 }
 
+.btn:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
 .error-msg {
     color: #c62828;
     text-align: center;
@@ -349,6 +354,16 @@ body {
     margin-bottom: 16px;
     color: #1a237e;
     font-size: 16px;
+}
+
+#btnNewUser {
+    margin-bottom: 16px;
+}
+
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .report-controls {

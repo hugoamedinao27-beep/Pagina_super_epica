@@ -1,3 +1,5 @@
+const ApplicationError = require('../utils/application-error');
+
 function isDatabaseUnavailable(error) {
     return ['ECONNREFUSED', 'PROTOCOL_CONNECTION_LOST', 'ETIMEDOUT'].includes(error.code);
 }
@@ -13,10 +15,16 @@ function notFoundHandler(req, res) {
 function errorHandler(error, req, res, next) {
     if (res.headersSent) return next(error);
 
-    console.error(`[${req.method} ${req.originalUrl}]`, error);
-
     if (error.type === 'entity.parse.failed') {
         return res.status(400).json({ success: false, message: 'El cuerpo JSON de la solicitud es inválido.' });
+    }
+
+    if (error instanceof ApplicationError) {
+        return res.status(error.statusCode).json({
+            success: false,
+            message: error.message,
+            code: error.code
+        });
     }
 
     if (isDatabaseUnavailable(error)) {
@@ -29,6 +37,8 @@ function errorHandler(error, req, res, next) {
     if (error.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ success: false, message: 'El registro ya existe.' });
     }
+
+    console.error(`[${req.method} ${req.originalUrl}]`, error);
 
     return res.status(500).json({ success: false, message: 'Ocurrió un error interno.' });
 }

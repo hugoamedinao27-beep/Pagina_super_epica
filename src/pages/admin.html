@@ -2,33 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Administracion - Tienda Super Wai</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración - Tienda Super Wai</title>
     <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
     <div class="header">
-        <h2>Panel de Administracion</h2>
+        <h2>Panel de Administración</h2>
         <div class="user-info">
             <span id="userName"></span>
-            <button class="btn" id="btnLogout">Cerrar Sesion</button>
+            <button type="button" class="btn" id="btnLogout">Cerrar sesión</button>
         </div>
     </div>
 
     <div class="admin-container">
         <div class="tabs">
-            <button class="tab-btn active" data-tab="reportes">Reportes</button>
-            <button class="tab-btn" data-tab="usuarios">Gestionar Usuarios</button>
+            <button type="button" class="tab-btn active" data-tab="reportes">Reportes</button>
+            <button type="button" class="tab-btn" data-tab="usuarios">Gestionar usuarios</button>
         </div>
 
         <div class="tab-content active" id="tab-reportes">
             <div class="card">
-                <h3>Reporte de Entradas Atrasadas (despues de 9:30 AM)</h3>
+                <h3>Entradas atrasadas (después de las 09:30)</h3>
                 <div class="report-controls">
                     <div class="form-group">
                         <label for="lateDate">Fecha</label>
                         <input type="date" id="lateDate">
                     </div>
-                    <button class="btn btn-primary btn-small" id="btnLateReport">Generar</button>
+                    <button type="button" class="btn btn-primary btn-small" id="btnLateReport">Generar</button>
                 </div>
                 <table id="lateTable">
                     <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Llegada</th></tr></thead>
@@ -38,13 +39,13 @@
             </div>
 
             <div class="card">
-                <h3>Reporte de Salidas Anticipadas (antes de 17:30 PM)</h3>
+                <h3>Salidas anticipadas (antes de las 17:30)</h3>
                 <div class="report-controls">
                     <div class="form-group">
                         <label for="earlyDate">Fecha</label>
                         <input type="date" id="earlyDate">
                     </div>
-                    <button class="btn btn-primary btn-small" id="btnEarlyReport">Generar</button>
+                    <button type="button" class="btn btn-primary btn-small" id="btnEarlyReport">Generar</button>
                 </div>
                 <table id="earlyTable">
                     <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Salida</th></tr></thead>
@@ -54,13 +55,13 @@
             </div>
 
             <div class="card">
-                <h3>Reporte de Inasistencias</h3>
+                <h3>Inasistencias</h3>
                 <div class="report-controls">
                     <div class="form-group">
                         <label for="absentDate">Fecha</label>
                         <input type="date" id="absentDate">
                     </div>
-                    <button class="btn btn-primary btn-small" id="btnAbsentReport">Generar</button>
+                    <button type="button" class="btn btn-primary btn-small" id="btnAbsentReport">Generar</button>
                 </div>
                 <table id="absentTable">
                     <thead><tr><th>ID</th><th>Nombre</th><th>Email</th></tr></thead>
@@ -72,8 +73,8 @@
 
         <div class="tab-content" id="tab-usuarios">
             <div class="card">
-                <h3>Usuarios del Sistema</h3>
-                <button class="btn btn-success btn-small" id="btnNewUser" style="margin-bottom: 16px">+ Crear Usuario</button>
+                <h3>Usuarios del sistema</h3>
+                <button type="button" class="btn btn-success btn-small" id="btnNewUser">+ Crear usuario</button>
                 <table id="usersTable">
                     <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody></tbody>
@@ -82,22 +83,22 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="userModal">
-        <div class="modal">
-            <h3 id="modalTitle">Crear Usuario</h3>
+    <div class="modal-overlay" id="userModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <h3 id="modalTitle">Crear usuario</h3>
             <form id="userForm">
                 <input type="hidden" id="userId">
                 <div class="form-group">
                     <label for="userNameInput">Nombre</label>
-                    <input type="text" id="userNameInput" required>
+                    <input type="text" id="userNameInput" minlength="2" maxlength="100" autocomplete="name" required>
                 </div>
                 <div class="form-group">
                     <label for="userEmail">Email</label>
-                    <input type="email" id="userEmail" required>
+                    <input type="email" id="userEmail" maxlength="100" autocomplete="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="userPass">Contrasena <span id="passHint"></span></label>
-                    <input type="password" id="userPass">
+                    <label for="userPass">Contraseña <span id="passHint"></span></label>
+                    <input type="password" id="userPass" minlength="8" maxlength="72" autocomplete="new-password">
                 </div>
                 <div class="form-group">
                     <label for="userRol">Rol</label>
@@ -108,7 +109,7 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveUser">Guardar</button>
                 </div>
             </form>
         </div>

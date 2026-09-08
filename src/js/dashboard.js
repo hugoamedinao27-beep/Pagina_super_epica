@@ -1,69 +1,119 @@
+const BUSINESS_TIME_ZONE = 'America/Santiago';
+
 function updateClock() {
     const now = new Date();
-    document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-CL');
-    document.getElementById('currentDate').textContent = now.toLocaleDateString('es-CL', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-CL', {
+        timeZone: BUSINESS_TIME_ZONE
     });
+    document.getElementById('currentDate').textContent = now.toLocaleDateString('es-CL', {
+        timeZone: BUSINESS_TIME_ZONE,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+async function requestJson(url, options = {}) {
+    let response;
+
+    try {
+        response = await fetch(url, options);
+    } catch (error) {
+        throw new Error('No fue posible conectar con el servidor. Verifica que esté iniciado.');
+    }
+
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+        window.location.href = '/';
+        throw new Error('Tu sesión terminó. Inicia sesión nuevamente.');
+    }
+    if (!response.ok) {
+        throw new Error(result.message || 'No fue posible completar la operación.');
+    }
+
+    return result;
 }
 
 async function loadUser() {
-    const res = await fetch('/api/current-user');
-    if (res.status === 401) { window.location.href = '/'; return; }
-    const user = await res.json();
+    const user = await requestJson('/api/current-user');
     document.getElementById('userName').textContent = user.nombre;
 }
 
-async function loadRecords() {
-    const res = await fetch('/api/attendance/status');
-    const result = await res.json();
+function renderRecords(records) {
     const list = document.getElementById('recordList');
-    if (result.records.length === 0) {
-        list.innerHTML = '<li class="no-data">Sin registros hoy</li>';
+    list.replaceChildren();
+
+    if (records.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'no-data';
+        empty.textContent = 'Sin registros hoy';
+        list.appendChild(empty);
         return;
     }
-    list.innerHTML = result.records.map(r => {
-        const time = new Date(r.fecha_hora).toLocaleTimeString('es-CL');
-        const badge = r.tipo === 'entrada' ? 'badge-entrada' : 'badge-salida';
-        return `<li><span class="${badge}">${r.tipo.toUpperCase()}</span><span>${time}</span></li>`;
-    }).join('');
+
+    records.forEach((record) => {
+        const item = document.createElement('li');
+        const badge = document.createElement('span');
+        const time = document.createElement('span');
+        badge.className = record.tipo === 'entrada' ? 'badge-entrada' : 'badge-salida';
+        badge.textContent = record.tipo.toUpperCase();
+        time.textContent = record.hora;
+        item.append(badge, time);
+        list.appendChild(item);
+    });
 }
 
-document.getElementById('btnEntrada').addEventListener('click', async () => {
-    const res = await fetch('/api/attendance/mark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'entrada' })
-    });
-    const result = await res.json();
-    showToast(result.message, result.success ? 'success' : 'error');
-    loadRecords();
+async function loadRecords() {
+    const result = await requestJson('/api/attendance/status');
+    renderRecords(result.records);
+}
+
+async function markAttendance(type, button) {
+    const buttons = document.querySelectorAll('.attendance-buttons button');
+    buttons.forEach((item) => { item.disabled = true; });
+
+    try {
+        const result = await requestJson('/api/attendance/mark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo: type })
+        });
+        showToast(result.message, 'success');
+        await loadRecords();
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        buttons.forEach((item) => { item.disabled = false; });
+        button.focus();
+    }
+}
+
+document.getElementById('btnEntrada').addEventListener('click', (event) => {
+    markAttendance('entrada', event.currentTarget);
 });
 
-document.getElementById('btnSalida').addEventListener('click', async () => {
-    const res = await fetch('/api/attendance/mark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'salida' })
-    });
-    const result = await res.json();
-    showToast(result.message, result.success ? 'success' : 'error');
-    loadRecords();
+document.getElementById('btnSalida').addEventListener('click', (event) => {
+    markAttendance('salida', event.currentTarget);
 });
 
 document.getElementById('btnLogout').addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/';
+    try {
+        await requestJson('/api/logout', { method: 'POST' });
+    } finally {
+        window.location.href = '/';
+    }
 });
 
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), 4000);
 }
 
 setInterval(updateClock, 1000);
 updateClock();
-loadUser();
-loadRecords();
+Promise.all([loadUser(), loadRecords()]).catch((error) => showToast(error.message, 'error'));

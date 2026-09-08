@@ -1,152 +1,290 @@
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+const BUSINESS_TIME_ZONE = 'America/Santiago';
+
+async function requestJson(url, options = {}) {
+    let response;
+
+    try {
+        response = await fetch(url, options);
+    } catch (error) {
+        throw new Error('No fue posible conectar con el servidor. Verifica que esté iniciado.');
+    }
+
+    const result = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+        window.location.href = '/';
+        throw new Error('Tu sesión terminó. Inicia sesión nuevamente.');
+    }
+    if (response.status === 403) {
+        window.location.href = '/dashboard';
+        throw new Error(result.message || 'No tienes permiso para realizar esta acción.');
+    }
+    if (!response.ok) {
+        throw new Error(result.message || 'No fue posible completar la operación.');
+    }
+
+    return result;
+}
+
+function todayInBusinessTimeZone() {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: BUSINESS_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date());
+}
+
+function createCell(value) {
+    const cell = document.createElement('td');
+    cell.textContent = value ?? '';
+    return cell;
+}
+
+function setButtonBusy(button, busy, busyLabel = 'Procesando...') {
+    if (!button.dataset.defaultLabel) {
+        button.dataset.defaultLabel = button.textContent;
+    }
+    button.disabled = busy;
+    button.textContent = busy ? busyLabel : button.dataset.defaultLabel;
+}
+
+document.querySelectorAll('.tab-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((item) => item.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(`tab-${button.dataset.tab}`).classList.add('active');
     });
 });
 
-function today() { return new Date().toISOString().slice(0, 10); }
-document.getElementById('lateDate').value = today();
-document.getElementById('earlyDate').value = today();
-document.getElementById('absentDate').value = today();
+const currentDate = todayInBusinessTimeZone();
+document.getElementById('lateDate').value = currentDate;
+document.getElementById('earlyDate').value = currentDate;
+document.getElementById('absentDate').value = currentDate;
 
 async function loadUser() {
-    const res = await fetch('/api/current-user');
-    if (res.status === 401) { window.location.href = '/'; return; }
-    const user = await res.json();
+    const user = await requestJson('/api/current-user');
+    if (user.rol !== 'admin') {
+        window.location.href = '/dashboard';
+        return;
+    }
     document.getElementById('userName').textContent = user.nombre;
 }
 
-// REPORTS
-document.getElementById('btnLateReport').addEventListener('click', async () => {
-    const fecha = document.getElementById('lateDate').value;
-    const res = await fetch(`/api/reports/late?fecha=${fecha}`);
-    const data = await res.json();
-    const tbody = document.querySelector('#lateTable tbody');
-    const noData = document.getElementById('lateNoData');
-    if (data.length === 0) { tbody.innerHTML = ''; noData.style.display = 'block'; return; }
-    noData.style.display = 'none';
-    tbody.innerHTML = data.map(r => `<tr><td>${r.id}</td><td>${r.nombre}</td><td>${r.email}</td><td>${r.hora_llegada}</td></tr>`).join('');
-});
+async function loadReport({ button, input, table, noData, endpoint, fields }) {
+    const date = document.getElementById(input).value;
+    if (!date) {
+        showToast('Selecciona una fecha válida.', 'error');
+        return;
+    }
 
-document.getElementById('btnEarlyReport').addEventListener('click', async () => {
-    const fecha = document.getElementById('earlyDate').value;
-    const res = await fetch(`/api/reports/early?fecha=${fecha}`);
-    const data = await res.json();
-    const tbody = document.querySelector('#earlyTable tbody');
-    const noData = document.getElementById('earlyNoData');
-    if (data.length === 0) { tbody.innerHTML = ''; noData.style.display = 'block'; return; }
-    noData.style.display = 'none';
-    tbody.innerHTML = data.map(r => `<tr><td>${r.id}</td><td>${r.nombre}</td><td>${r.email}</td><td>${r.hora_salida}</td></tr>`).join('');
-});
+    const tbody = document.querySelector(`#${table} tbody`);
+    const emptyMessage = document.getElementById(noData);
+    setButtonBusy(button, true, 'Generando...');
 
-document.getElementById('btnAbsentReport').addEventListener('click', async () => {
-    const fecha = document.getElementById('absentDate').value;
-    const res = await fetch(`/api/reports/absent?fecha=${fecha}`);
-    const data = await res.json();
-    const tbody = document.querySelector('#absentTable tbody');
-    const noData = document.getElementById('absentNoData');
-    if (data.length === 0) { tbody.innerHTML = ''; noData.style.display = 'block'; return; }
-    noData.style.display = 'none';
-    tbody.innerHTML = data.map(r => `<tr><td>${r.id}</td><td>${r.nombre}</td><td>${r.email}</td></tr>`).join('');
-});
+    try {
+        const rows = await requestJson(`${endpoint}?fecha=${encodeURIComponent(date)}`);
+        tbody.replaceChildren();
 
-// USERS
-async function loadUsers() {
-    const res = await fetch('/api/users');
-    const users = await res.json();
-    const tbody = document.querySelector('#usersTable tbody');
-    tbody.innerHTML = users.map(u => `
-        <tr>
-            <td>${u.id}</td><td>${u.nombre}</td><td>${u.email}</td><td>${u.rol}</td>
-            <td>${u.activo ? 'Activo' : 'Inactivo'}</td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick='editUser(${JSON.stringify(u)})'>Editar</button>
-                ${u.activo
-                    ? `<button class="btn btn-danger btn-small" onclick="toggleUser(${u.id}, false)">Desactivar</button>`
-                    : `<button class="btn btn-success btn-small" onclick="toggleUser(${u.id}, true)">Activar</button>`}
-            </td>
-        </tr>
-    `).join('');
+        rows.forEach((row) => {
+            const tr = document.createElement('tr');
+            fields.forEach((field) => tr.appendChild(createCell(row[field])));
+            tbody.appendChild(tr);
+        });
+
+        emptyMessage.textContent = rows.length === 0
+            ? 'No se encontraron resultados para la fecha seleccionada.'
+            : '';
+        emptyMessage.hidden = rows.length > 0;
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        setButtonBusy(button, false);
+    }
 }
 
-// MODAL
+document.getElementById('btnLateReport').addEventListener('click', (event) => loadReport({
+    button: event.currentTarget,
+    input: 'lateDate',
+    table: 'lateTable',
+    noData: 'lateNoData',
+    endpoint: '/api/reports/late',
+    fields: ['id', 'nombre', 'email', 'hora_llegada']
+}));
+
+document.getElementById('btnEarlyReport').addEventListener('click', (event) => loadReport({
+    button: event.currentTarget,
+    input: 'earlyDate',
+    table: 'earlyTable',
+    noData: 'earlyNoData',
+    endpoint: '/api/reports/early',
+    fields: ['id', 'nombre', 'email', 'hora_salida']
+}));
+
+document.getElementById('btnAbsentReport').addEventListener('click', (event) => loadReport({
+    button: event.currentTarget,
+    input: 'absentDate',
+    table: 'absentTable',
+    noData: 'absentNoData',
+    endpoint: '/api/reports/absent',
+    fields: ['id', 'nombre', 'email']
+}));
+
 const modal = document.getElementById('userModal');
 const form = document.getElementById('userForm');
+const passwordInput = document.getElementById('userPass');
+
+function closeModal() {
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function openModal() {
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('userNameInput').focus();
+}
+
+function editUser(user) {
+    document.getElementById('modalTitle').textContent = 'Modificar usuario';
+    document.getElementById('passHint').textContent = '(dejar vacía para conservarla)';
+    passwordInput.required = false;
+    document.getElementById('userId').value = user.id;
+    document.getElementById('userNameInput').value = user.nombre;
+    document.getElementById('userEmail').value = user.email;
+    document.getElementById('userRol').value = user.rol;
+    passwordInput.value = '';
+    openModal();
+}
+
+async function toggleUser(id, activate, button) {
+    const action = activate ? 'activar' : 'desactivar';
+    if (!window.confirm(`¿Deseas ${action} este usuario?`)) {
+        return;
+    }
+
+    setButtonBusy(button, true);
+    try {
+        await requestJson(`/api/users/${id}/${activate ? 'activate' : 'deactivate'}`, {
+            method: 'PUT'
+        });
+        showToast(activate ? 'Usuario activado.' : 'Usuario desactivado.', 'success');
+        await loadUsers();
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        setButtonBusy(button, false);
+    }
+}
+
+function renderUsers(users) {
+    const tbody = document.querySelector('#usersTable tbody');
+    tbody.replaceChildren();
+
+    users.forEach((user) => {
+        const row = document.createElement('tr');
+        row.append(
+            createCell(user.id),
+            createCell(user.nombre),
+            createCell(user.email),
+            createCell(user.rol === 'admin' ? 'Administrador' : 'Empleado'),
+            createCell(user.activo ? 'Activo' : 'Inactivo')
+        );
+
+        const actions = document.createElement('td');
+        actions.className = 'table-actions';
+
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'btn btn-secondary btn-small';
+        editButton.textContent = 'Editar';
+        editButton.addEventListener('click', () => editUser(user));
+
+        const stateButton = document.createElement('button');
+        stateButton.type = 'button';
+        stateButton.className = `btn ${user.activo ? 'btn-danger' : 'btn-success'} btn-small`;
+        stateButton.textContent = user.activo ? 'Desactivar' : 'Activar';
+        stateButton.addEventListener('click', () => toggleUser(user.id, !user.activo, stateButton));
+
+        actions.append(editButton, stateButton);
+        row.appendChild(actions);
+        tbody.appendChild(row);
+    });
+}
+
+async function loadUsers() {
+    try {
+        renderUsers(await requestJson('/api/users'));
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
 
 document.getElementById('btnNewUser').addEventListener('click', () => {
-    document.getElementById('modalTitle').textContent = 'Crear Usuario';
-    document.getElementById('passHint').textContent = '';
-    document.getElementById('userPass').required = true;
     form.reset();
+    document.getElementById('modalTitle').textContent = 'Crear usuario';
+    document.getElementById('passHint').textContent = '(mínimo 8 caracteres, una letra y un número)';
+    passwordInput.required = true;
     document.getElementById('userId').value = '';
-    modal.classList.add('active');
+    openModal();
 });
 
-document.getElementById('btnCancelModal').addEventListener('click', () => modal.classList.remove('active'));
+document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal.classList.contains('active')) {
+        closeModal();
+    }
+});
 
-window.editUser = (u) => {
-    document.getElementById('modalTitle').textContent = 'Modificar Usuario';
-    document.getElementById('passHint').textContent = '(dejar vacio para no cambiar)';
-    document.getElementById('userPass').required = false;
-    document.getElementById('userId').value = u.id;
-    document.getElementById('userNameInput').value = u.nombre;
-    document.getElementById('userEmail').value = u.email;
-    document.getElementById('userRol').value = u.rol;
-    document.getElementById('userPass').value = '';
-    modal.classList.add('active');
-};
-
-window.toggleUser = async (id, activate) => {
-    if (!confirm(activate ? 'Activar este usuario?' : 'Desactivar este usuario?')) return;
-    await fetch(`/api/users/${id}/${activate ? 'activate' : 'deactivate'}`, { method: 'PUT' });
-    loadUsers();
-    showToast(activate ? 'Usuario activado' : 'Usuario desactivado', 'success');
-};
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     const id = document.getElementById('userId').value;
+    const saveButton = document.getElementById('btnSaveUser');
     const data = {
         nombre: document.getElementById('userNameInput').value,
         email: document.getElementById('userEmail').value,
-        contrasena: document.getElementById('userPass').value,
+        contrasena: passwordInput.value,
         rol: document.getElementById('userRol').value
     };
 
-    if (id) {
-        await fetch(`/api/users/${id}`, {
-            method: 'PUT',
+    setButtonBusy(saveButton, true, 'Guardando...');
+    try {
+        await requestJson(id ? `/api/users/${id}` : '/api/users', {
+            method: id ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        showToast('Usuario modificado', 'success');
-    } else {
-        await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        showToast('Usuario creado', 'success');
+        showToast(id ? 'Usuario modificado.' : 'Usuario creado.', 'success');
+        closeModal();
+        await loadUsers();
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        setButtonBusy(saveButton, false);
     }
-    modal.classList.remove('active');
-    loadUsers();
 });
 
 document.getElementById('btnLogout').addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/';
+    try {
+        await requestJson('/api/logout', { method: 'POST' });
+    } finally {
+        window.location.href = '/';
+    }
 });
 
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), 4000);
 }
 
-loadUser();
-loadUsers();
+Promise.all([loadUser(), loadUsers()]).catch((error) => showToast(error.message, 'error'));

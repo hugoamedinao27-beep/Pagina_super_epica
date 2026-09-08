@@ -4,6 +4,7 @@ const pool = require('../database/connection');
 const config = require('../config/environment');
 const asyncHandler = require('../middleware/async-handler');
 const { requireAuth } = require('../middleware/auth');
+const { validateEmail } = require('../utils/validation');
 
 const router = express.Router();
 
@@ -26,12 +27,14 @@ function destroySession(req) {
 }
 
 router.post('/login', asyncHandler(async (req, res) => {
-    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const emailValue = typeof req.body.email === 'string' ? req.body.email : '';
     const contrasena = typeof req.body.contrasena === 'string' ? req.body.contrasena : '';
 
-    if (!email || !contrasena) {
+    if (!emailValue || !contrasena) {
         return res.status(400).json({ success: false, message: 'Correo y contraseña son obligatorios.' });
     }
+
+    const email = validateEmail(emailValue);
 
     const [rows] = await pool.query(
         'SELECT id, nombre, email, contrasena, rol FROM usuarios WHERE email = ? AND activo = TRUE',
