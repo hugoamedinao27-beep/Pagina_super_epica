@@ -6,6 +6,12 @@ const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ALLOWED_ROLES = new Set(['admin', 'empleado']);
 const ALLOWED_ATTENDANCE_TYPES = new Set(['entrada', 'salida']);
 
+/**
+ * Las funciones de este módulo validan datos no confiables antes de enviarlos
+ * a los modelos. Devuelven el valor normalizado o lanzan ApplicationError 400.
+ */
+
+/** @returns {number} Identificador entero positivo. */
 function validateId(value, fieldName = 'id') {
     const id = Number(value);
     if (!Number.isSafeInteger(id) || id <= 0) {
@@ -14,6 +20,7 @@ function validateId(value, fieldName = 'id') {
     return id;
 }
 
+/** @returns {string} Nombre sin espacios repetidos al inicio, final o interior. */
 function validateName(value) {
     if (typeof value !== 'string') {
         throw new ApplicationError(400, 'El nombre es obligatorio.', 'INVALID_NAME');
@@ -30,6 +37,7 @@ function validateName(value) {
     return name;
 }
 
+/** @returns {string} Correo normalizado en minúsculas. */
 function validateEmail(value) {
     if (typeof value !== 'string') {
         throw new ApplicationError(400, 'El correo es obligatorio.', 'INVALID_EMAIL');
@@ -42,6 +50,10 @@ function validateEmail(value) {
     return email;
 }
 
+/**
+ * Valida la política de contraseña y el límite de 72 bytes de bcrypt.
+ * @returns {string|null} Contraseña original o null cuando el cambio es opcional.
+ */
 function validatePassword(value, { required = true } = {}) {
     if (!required && (value === undefined || value === null || value === '')) return null;
     if (typeof value !== 'string') {
@@ -59,6 +71,7 @@ function validatePassword(value, { required = true } = {}) {
     return value;
 }
 
+/** @returns {'admin'|'empleado'} Rol permitido. */
 function validateRole(value) {
     if (!ALLOWED_ROLES.has(value)) {
         throw new ApplicationError(400, 'El rol debe ser admin o empleado.', 'INVALID_ROLE');
@@ -66,6 +79,7 @@ function validateRole(value) {
     return value;
 }
 
+/** @returns {'entrada'|'salida'} Tipo de marcación permitido. */
 function validateAttendanceType(value) {
     if (!ALLOWED_ATTENDANCE_TYPES.has(value)) {
         throw new ApplicationError(400, 'El tipo debe ser entrada o salida.', 'INVALID_ATTENDANCE_TYPE');
@@ -73,6 +87,7 @@ function validateAttendanceType(value) {
     return value;
 }
 
+/** @returns {string} Fecha real en formato AAAA-MM-DD. */
 function validateDate(value) {
     if (typeof value !== 'string') {
         throw new ApplicationError(400, 'La fecha es obligatoria.', 'INVALID_DATE');

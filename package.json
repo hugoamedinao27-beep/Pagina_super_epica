@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node main.js",
     "dev": "node --watch main.js",
-    "init-db": "node database/init.js"
+    "init-db": "node database/init.js",
+    "test": "node --test --test-concurrency=1 test/unit/validation.test.js test/unit/business-time.test.js test/integration/api.test.js test/concurrency/attendance.test.js",
+    "test:unit": "node --test test/unit/validation.test.js test/unit/business-time.test.js",
+    "test:integration": "node --test --test-concurrency=1 test/integration/api.test.js",
+    "test:concurrency": "node --test --test-concurrency=1 test/concurrency/attendance.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-concurrency=1 test/unit/validation.test.js test/unit/business-time.test.js test/integration/api.test.js test/concurrency/attendance.test.js"
   },
   "engines": {
     "node": ">=20.12"

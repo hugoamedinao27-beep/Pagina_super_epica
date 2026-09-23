@@ -1,5 +1,9 @@
 const pool = require('../database/connection');
 
+/**
+ * Revalida la cuenta contra MySQL en cada solicitud. Esto hace efectivos de
+ * inmediato los cambios de rol y las desactivaciones aunque exista una sesión.
+ */
 async function findActiveSessionUser(sessionUser) {
     if (!sessionUser?.id) return null;
 
@@ -11,6 +15,7 @@ async function findActiveSessionUser(sessionUser) {
     return rows[0] || null;
 }
 
+/** Actualiza la copia mínima del usuario almacenada en la sesión. */
 async function refreshSessionUser(req) {
     const user = await findActiveSessionUser(req.session.user);
     if (!user) {
@@ -22,6 +27,7 @@ async function refreshSessionUser(req) {
     return user;
 }
 
+/** Middleware JSON: exige una cuenta activa de cualquier rol. */
 async function requireAuth(req, res, next) {
     try {
         if (!req.session.user) {
@@ -39,6 +45,7 @@ async function requireAuth(req, res, next) {
     }
 }
 
+/** Middleware JSON: exige una cuenta activa con rol de administrador. */
 async function requireAdmin(req, res, next) {
     try {
         if (!req.session.user) {

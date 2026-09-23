@@ -2,7 +2,13 @@ const pool = require('../database/connection');
 const bcrypt = require('bcryptjs');
 const ApplicationError = require('../utils/application-error');
 
+/**
+ * Acceso a datos y reglas de negocio de usuarios.
+ * Las operaciones que pueden dejar el sistema sin administradores se ejecutan
+ * dentro de transacciones y bloquean las filas involucradas.
+ */
 class Usuario {
+    /** @returns {Promise<Array>} Usuarios sin hashes de contraseña. */
     static async listar() {
         const [rows] = await pool.query(
             'SELECT id, nombre, email, rol, activo, creado_en FROM usuarios ORDER BY nombre'
@@ -10,6 +16,10 @@ class Usuario {
         return rows;
     }
 
+    /**
+     * Crea un usuario almacenando únicamente el hash bcrypt de su contraseña.
+     * @returns {Promise<object>} Usuario creado, sin información sensible.
+     */
     static async crear({ nombre, email, contrasena, rol }) {
         const hash = await bcrypt.hash(contrasena, 10);
         const [result] = await pool.query(
@@ -20,6 +30,7 @@ class Usuario {
         return this.buscarPorId(result.insertId);
     }
 
+    /** @returns {Promise<object|null>} Usuario público o null cuando no existe. */
     static async buscarPorId(id, connection = pool) {
         const [rows] = await connection.query(
             'SELECT id, nombre, email, rol, activo, creado_en FROM usuarios WHERE id = ?',
@@ -28,6 +39,11 @@ class Usuario {
         return rows[0] || null;
     }
 
+    /**
+     * Modifica un usuario y conserva su contraseña cuando `contrasena` es null.
+     * @param {number} actorId Usuario administrador que realiza la operación.
+     * @param {number} id Usuario objetivo.
+     */
     static async modificar(actorId, id, { nombre, email, contrasena, rol }) {
         const connection = await pool.getConnection();
 
@@ -70,6 +86,10 @@ class Usuario {
         }
     }
 
+    /**
+     * Activa o desactiva una cuenta sin eliminar su historial de asistencia.
+     * Impide la autodesactivación y la eliminación lógica del último admin.
+     */
     static async cambiarEstado(actorId, id, activo) {
         const connection = await pool.getConnection();
 

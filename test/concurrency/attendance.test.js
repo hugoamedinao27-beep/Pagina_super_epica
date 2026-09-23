@@ -1,0 +1,70 @@
+const { test, before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const {
+    configureTestEnvironment,
+    createTestDatabase,
+    dropTestDatabase,
+    resetFixtures,
+    HttpTestClient,
+    listen,
+    closeServer
+} = require('../helpers/test-environment');
+
+const environment = configureTestEnvironment('concurrency');
+let pool;
+let server;
+let baseUrl;
+let employeeId;
+
+before(async () => {
+    await createTestDatabase(environment);
+    const app = require('../../app');
+    pool = require('../../database/connection');
+    ({ employeeId } = await resetFixtures(pool));
+    ({ server, baseUrl } = await listen(app));
+});
+
+after(async () => {
+    if (server) await closeServer(server);
+    if (pool) await pool.end();
+    await dropTestDatabase(environment);
+});
+
+test('ocho solicitudes simultáneas guardan una sola entrada y una sola salida', async () => {
+    const employee = new HttpTestClient(baseUrl);
+    const login = await employee.login('empleado@test.local', 'Empleado12345');
+    assert.equal(login.status, 200);
+
+    const entryResponses = await Promise.all(
+        Array.from({ length: 8 }, () => employee.request('/api/attendance/mark', {
+            method: 'POST',
+            body: { tipo: 'entrada' }
+        }))
+    );
+    assert.equal(entryResponses.filter((response) => response.status === 201).length, 1);
+    assert.equal(entryResponses.filter((response) => response.status === 409).length, 7);
+
+    await pool.query(
+        'UPDATE asistencia SET fecha_hora = DATE_SUB(fecha_hora, INTERVAL 2 MINUTE) WHERE usuario_id = ? AND tipo = ?',
+        [employeeId, 'entrada']
+    );
+
+    const exitResponses = await Promise.all(
+        Array.from({ length: 8 }, () => employee.request('/api/attendance/mark', {
+            method: 'POST',
+            body: { tipo: 'salida' }
+        }))
+    );
+    assert.equal(exitResponses.filter((response) => response.status === 201).length, 1);
+    assert.equal(exitResponses.filter((response) => response.status === 409).length, 7);
+
+    const [[counts]] = await pool.query(`
+        SELECT
+            SUM(tipo = 'entrada') AS entradas,
+            SUM(tipo = 'salida') AS salidas
+        FROM asistencia
+        WHERE usuario_id = ?
+    `, [employeeId]);
+    assert.equal(Number(counts.entradas), 1);
+    assert.equal(Number(counts.salidas), 1);
+});

@@ -1,6 +1,12 @@
 const pool = require('../database/connection');
 
+/**
+ * Consultas de solo lectura para los reportes administrativos.
+ * Reciben fechas ya validadas y comparan horarios inclusivos según las reglas:
+ * 09:30 es puntual y 17:30 no es una salida anticipada.
+ */
 class Reporte {
+    /** @returns {Promise<Array>} Entradas posteriores a las 09:30. */
     static async atrasos(fecha) {
         const [rows] = await pool.query(`
             SELECT u.id, u.nombre, u.email, a.fecha, a.fecha_hora,
@@ -16,6 +22,7 @@ class Reporte {
         return rows;
     }
 
+    /** @returns {Promise<Array>} Salidas anteriores a las 17:30. */
     static async salidasAnticipadas(fecha) {
         const [rows] = await pool.query(`
             SELECT u.id, u.nombre, u.email, a.fecha, a.fecha_hora,
@@ -31,6 +38,7 @@ class Reporte {
         return rows;
     }
 
+    /** @returns {Promise<Array>} Empleados activos sin marcaciones ese día. */
     static async inasistencias(fecha) {
         const [rows] = await pool.query(`
             SELECT u.id, u.nombre, u.email
