@@ -1,9 +1,11 @@
 const ApplicationError = require('../utils/application-error');
 
+/** Indica si MySQL está apagado, perdió la conexión o agotó el tiempo de espera. */
 function isDatabaseUnavailable(error) {
     return ['ECONNREFUSED', 'PROTOCOL_CONNECTION_LOST', 'ETIMEDOUT'].includes(error.code);
 }
 
+/** Devuelve errores 404 en JSON para la API y texto para páginas web. */
 function notFoundHandler(req, res) {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ success: false, message: 'Recurso no encontrado.' });
@@ -12,6 +14,10 @@ function notFoundHandler(req, res) {
     return res.status(404).send('Página no encontrada.');
 }
 
+/**
+ * Punto único de traducción de errores a respuestas HTTP.
+ * Los errores inesperados se registran en servidor sin filtrar detalles al cliente.
+ */
 function errorHandler(error, req, res, next) {
     if (res.headersSent) return next(error);
 

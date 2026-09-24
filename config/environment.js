@@ -2,12 +2,14 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+// La configuración se centraliza para que el resto del sistema no lea process.env directamente.
 const envPath = path.join(__dirname, '..', '.env');
 
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
     process.loadEnvFile(envPath);
 }
 
+/** Lee una variable entera positiva o utiliza el valor predeterminado. */
 function readInteger(name, fallback) {
     const rawValue = process.env[name];
     if (rawValue === undefined || rawValue === '') return fallback;
@@ -20,6 +22,7 @@ function readInteger(name, fallback) {
     return value;
 }
 
+/** Lee una variable booleana; únicamente el texto "true" representa verdadero. */
 function readBoolean(name, fallback) {
     const rawValue = process.env[name];
     if (rawValue === undefined || rawValue === '') return fallback;

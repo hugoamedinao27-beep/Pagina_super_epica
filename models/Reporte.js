@@ -90,6 +90,7 @@ class Reporte {
         return this.#createResult(items, pageInfo);
     }
 
+    /** Calcula una página válida y su desplazamiento a partir del total encontrado. */
     static #buildPageInfo(totalValue, { page, pageSize }) {
         const total = Number(totalValue);
         const totalPages = Math.ceil(total / pageSize);
@@ -104,6 +105,7 @@ class Reporte {
         };
     }
 
+    /** Mantiene un formato uniforme de respuesta para todos los reportes. */
     static #createResult(items, pageInfo) {
         return {
             items,

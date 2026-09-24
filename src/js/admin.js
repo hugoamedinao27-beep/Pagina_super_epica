@@ -1,5 +1,9 @@
 const BUSINESS_TIME_ZONE = 'America/Santiago';
 
+/**
+ * Ejecuta una petición de la interfaz y normaliza errores de red, sesión y API.
+ * @returns {Promise<any>} Cuerpo JSON de una respuesta exitosa.
+ */
 async function requestJson(url, options = {}) {
     let response;
 
@@ -26,6 +30,7 @@ async function requestJson(url, options = {}) {
     return result;
 }
 
+/** @returns {string} Fecha AAAA-MM-DD vigente en la zona horaria del negocio. */
 function todayInBusinessTimeZone() {
     return new Intl.DateTimeFormat('en-CA', {
         timeZone: BUSINESS_TIME_ZONE,
@@ -35,12 +40,14 @@ function todayInBusinessTimeZone() {
     }).format(new Date());
 }
 
+/** Crea una celda usando textContent para impedir la inyección de HTML. */
 function createCell(value) {
     const cell = document.createElement('td');
     cell.textContent = value ?? '';
     return cell;
 }
 
+/** Bloquea temporalmente un botón y conserva su etiqueta original. */
 function setButtonBusy(button, busy, busyLabel = 'Procesando...') {
     if (!button.dataset.defaultLabel) {
         button.dataset.defaultLabel = button.textContent;
@@ -84,6 +91,11 @@ document.getElementById('earlyDate').value = currentDate;
 document.getElementById('absentDate').value = currentDate;
 
 const REPORT_PAGE_SIZE = 25;
+
+/**
+ * Configuración declarativa para reutilizar la consulta, el renderizado y la
+ * paginación en los tres tipos de reporte.
+ */
 const reportConfigs = {
     late: {
         input: 'lateDate',
@@ -136,6 +148,7 @@ Object.values(reportConfigs).forEach((config) => {
     });
 });
 
+/** Carga el usuario actual y evita que otro rol utilice el panel administrativo. */
 async function loadUser() {
     const user = await requestJson('/api/current-user');
     if (user.rol !== 'admin') {
@@ -145,6 +158,7 @@ async function loadUser() {
     document.getElementById('userName').textContent = user.nombre;
 }
 
+/** Inserta de manera segura los registros de una página de reporte. */
 function renderReport(config, rows) {
     const tbody = document.querySelector(`#${config.table} tbody`);
     const emptyMessage = document.getElementById(config.noData);
@@ -162,6 +176,7 @@ function renderReport(config, rows) {
     emptyMessage.hidden = rows.length > 0;
 }
 
+/** Actualiza botones, número de página y rango visible de resultados. */
 function updateReportPagination(config) {
     const pagination = document.getElementById(config.pagination);
     const summary = document.getElementById(config.summary);
@@ -183,6 +198,7 @@ function updateReportPagination(config) {
     summary.textContent = `Mostrando ${firstResult}–${lastResult} de ${config.total} resultados`;
 }
 
+/** Limpia resultados anteriores cuando cambia la fecha del reporte. */
 function resetReport(config) {
     document.querySelector(`#${config.table} tbody`).replaceChildren();
     const emptyMessage = document.getElementById(config.noData);
@@ -198,6 +214,7 @@ function resetReport(config) {
     updateReportPagination(config);
 }
 
+/** Consulta una página y sincroniza la tabla con los metadatos del servidor. */
 async function loadReport(config, requestedPage, triggerButton) {
     const date = document.getElementById(config.input).value;
     if (!date) {
@@ -247,17 +264,20 @@ const modal = document.getElementById('userModal');
 const form = document.getElementById('userForm');
 const passwordInput = document.getElementById('userPass');
 
+/** Cierra el diálogo de usuario y actualiza su estado de accesibilidad. */
 function closeModal() {
     modal.classList.remove('active');
     modal.setAttribute('aria-hidden', 'true');
 }
 
+/** Abre el diálogo y mueve el foco al primer campo editable. */
 function openModal() {
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
     document.getElementById('userNameInput').focus();
 }
 
+/** Completa el formulario sin recuperar ni mostrar la contraseña almacenada. */
 function editUser(user) {
     document.getElementById('modalTitle').textContent = 'Modificar usuario';
     document.getElementById('passHint').textContent = '(dejar vacía para conservarla)';
@@ -270,6 +290,7 @@ function editUser(user) {
     openModal();
 }
 
+/** Activa o desactiva una cuenta después de solicitar confirmación. */
 async function toggleUser(id, activate, button) {
     const action = activate ? 'activar' : 'desactivar';
     if (!window.confirm(`¿Deseas ${action} este usuario?`)) {
@@ -290,6 +311,7 @@ async function toggleUser(id, activate, button) {
     }
 }
 
+/** Renderiza usuarios y enlaza sus acciones sin insertar HTML recibido de la API. */
 function renderUsers(users) {
     const tbody = document.querySelector('#usersTable tbody');
     tbody.replaceChildren();
@@ -325,6 +347,7 @@ function renderUsers(users) {
     });
 }
 
+/** Obtiene del servidor la lista actualizada de usuarios. */
 async function loadUsers() {
     try {
         renderUsers(await requestJson('/api/users'));
@@ -390,6 +413,7 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
     }
 });
 
+/** Muestra una notificación temporal accesible de éxito o error. */
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;

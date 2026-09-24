@@ -8,24 +8,33 @@ const { validateEmail } = require('../utils/validation');
 
 const router = express.Router();
 
+/** Regenera el identificador de sesión para evitar fijación de sesión al ingresar. */
 function regenerateSession(req) {
     return new Promise((resolve, reject) => {
         req.session.regenerate((error) => error ? reject(error) : resolve());
     });
 }
 
+/** Fuerza el guardado de la sesión antes de responder al inicio de sesión. */
 function saveSession(req) {
     return new Promise((resolve, reject) => {
         req.session.save((error) => error ? reject(error) : resolve());
     });
 }
 
+/** Elimina del servidor la sesión asociada a la solicitud. */
 function destroySession(req) {
     return new Promise((resolve, reject) => {
         req.session.destroy((error) => error ? reject(error) : resolve());
     });
 }
 
+/**
+ * POST /api/login
+ * Autentica una cuenta activa mediante correo y contraseña.
+ * Body: { email: string, contrasena: string }.
+ * Responde 200 con el usuario público o 401 cuando las credenciales no coinciden.
+ */
 router.post('/login', asyncHandler(async (req, res) => {
     const emailValue = typeof req.body.email === 'string' ? req.body.email : '';
     const contrasena = typeof req.body.contrasena === 'string' ? req.body.contrasena : '';
@@ -54,12 +63,14 @@ router.post('/login', asyncHandler(async (req, res) => {
     return res.json({ success: true, user: req.session.user });
 }));
 
+/** POST /api/logout: destruye la sesión actual y elimina su cookie. */
 router.post('/logout', asyncHandler(async (req, res) => {
     await destroySession(req);
     res.clearCookie(config.session.name);
     return res.json({ success: true });
 }));
 
+/** GET /api/current-user: devuelve el usuario activo de la sesión autenticada. */
 router.get('/current-user', requireAuth, (req, res) => {
     res.json(req.session.user);
 });

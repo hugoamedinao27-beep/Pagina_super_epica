@@ -1,5 +1,6 @@
 const BUSINESS_TIME_ZONE = 'America/Santiago';
 
+/** Actualiza el reloj visual usando la misma zona horaria que el servidor. */
 function updateClock() {
     const now = new Date();
     document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-CL', {
@@ -14,6 +15,10 @@ function updateClock() {
     });
 }
 
+/**
+ * Realiza una petición JSON y redirige al login si la sesión dejó de ser válida.
+ * @returns {Promise<any>} Cuerpo JSON de la respuesta exitosa.
+ */
 async function requestJson(url, options = {}) {
     let response;
 
@@ -35,11 +40,13 @@ async function requestJson(url, options = {}) {
     return result;
 }
 
+/** Carga el nombre del empleado autenticado. */
 async function loadUser() {
     const user = await requestJson('/api/current-user');
     document.getElementById('userName').textContent = user.nombre;
 }
 
+/** Renderiza las marcaciones diarias evitando insertar HTML recibido de la API. */
 function renderRecords(records) {
     const list = document.getElementById('recordList');
     list.replaceChildren();
@@ -64,11 +71,16 @@ function renderRecords(records) {
     });
 }
 
+/** Consulta las entradas y salidas correspondientes al día actual. */
 async function loadRecords() {
     const result = await requestJson('/api/attendance/status');
     renderRecords(result.records);
 }
 
+/**
+ * Envía una entrada o salida, bloqueando ambos botones para evitar dobles clics.
+ * @param {'entrada'|'salida'} type Tipo solicitado.
+ */
 async function markAttendance(type, button) {
     const buttons = document.querySelectorAll('.attendance-buttons button');
     buttons.forEach((item) => { item.disabled = true; });
@@ -105,6 +117,7 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
     }
 });
 
+/** Muestra una notificación temporal accesible de éxito o error. */
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;

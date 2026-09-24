@@ -2,6 +2,10 @@ const loginForm = document.getElementById('loginForm');
 const loginButton = document.getElementById('btnLogin');
 const errorMessage = document.getElementById('errorMsg');
 
+/**
+ * Envía las credenciales, evita envíos duplicados y dirige al panel que
+ * corresponde al rol devuelto por el servidor.
+ */
 loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     errorMessage.textContent = '';

@@ -67,6 +67,7 @@ async function requireAdmin(req, res, next) {
     }
 }
 
+/** Protege páginas HTML y redirige al login cuando la sesión no es válida. */
 function requirePageAuth(req, res, next) {
     if (!req.session.user) return res.redirect('/');
 
@@ -79,6 +80,7 @@ function requirePageAuth(req, res, next) {
         .catch(next);
 }
 
+/** Protege el panel administrativo y redirige a usuarios sin ese rol. */
 function requireAdminPage(req, res, next) {
     if (!req.session.user) return res.redirect('/');
 

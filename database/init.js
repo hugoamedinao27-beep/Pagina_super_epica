@@ -3,20 +3,24 @@ const bcrypt = require('bcryptjs');
 const config = require('../config/environment');
 const { validateEmail, validateName, validatePassword } = require('../utils/validation');
 
+/** Evita interpolar como identificador un nombre de base potencialmente peligroso. */
 function validateDatabaseName(databaseName) {
     if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
         throw new Error('DB_NAME contiene caracteres no permitidos.');
     }
 }
 
+/** Detecta valores obligatorios que todavía conservan el texto del ejemplo. */
 function isPlaceholder(value) {
     return !value || value.startsWith('REEMPLAZAR_');
 }
 
+/** Escapa un identificador MySQL previamente validado. */
 function quoteIdentifier(identifier) {
     return `\`${String(identifier).replace(/`/g, '``')}\``;
 }
 
+/** Comprueba si una columna ya existe para que la migración sea repetible. */
 async function columnExists(connection, table, column) {
     const [rows] = await connection.query(`
         SELECT 1
@@ -26,6 +30,7 @@ async function columnExists(connection, table, column) {
     return rows.length > 0;
 }
 
+/** Comprueba si un índice ya existe para que la migración sea repetible. */
 async function indexExists(connection, table, index) {
     const [rows] = await connection.query(`
         SELECT 1
@@ -35,6 +40,10 @@ async function indexExists(connection, table, index) {
     return rows.length > 0;
 }
 
+/**
+ * Lleva instalaciones anteriores al esquema actual sin borrar registros.
+ * Se detiene si encuentra duplicados que impedirían crear la restricción única.
+ */
 async function migrateExistingSchema(connection) {
     await connection.query("UPDATE usuarios SET rol = 'empleado' WHERE rol IS NULL");
     await connection.query('UPDATE usuarios SET activo = TRUE WHERE activo IS NULL');
@@ -105,6 +114,10 @@ async function migrateExistingSchema(connection) {
     }
 }
 
+/**
+ * Crea el administrador inicial con bcrypt o verifica que el existente siga
+ * siendo una cuenta administrativa activa.
+ */
 async function seedAdministrator(connection) {
     if (isPlaceholder(config.admin.email) || isPlaceholder(config.admin.password)) {
         throw new Error('ADMIN_EMAIL y ADMIN_PASSWORD deben estar configurados con valores reales.');
@@ -134,6 +147,10 @@ async function seedAdministrator(connection) {
     console.log(`Usuario administrador creado: ${email}`);
 }
 
+/**
+ * Crea la base, aplica las tablas y migraciones, y garantiza un administrador.
+ * Puede ejecutarse varias veces mediante `npm run init-db`.
+ */
 async function initDatabase() {
     validateDatabaseName(config.db.database);
     if (isPlaceholder(config.db.password)) {

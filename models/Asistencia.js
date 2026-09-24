@@ -5,6 +5,10 @@ class Asistencia {
     /**
      * Registra una marcación dentro de una transacción. El bloqueo de la fila del
      * usuario serializa las solicitudes concurrentes para una misma persona.
+     * @param {number} usuarioId Identificador del empleado autenticado.
+     * @param {'entrada'|'salida'} tipo Tipo de marcación.
+     * @param {{date: string, time: string, dateTime: string}} businessDateTime Hora del negocio.
+     * @returns {Promise<{tipo: string, fecha_hora: string}>} Marcación creada.
      */
     static async registrar(usuarioId, tipo, businessDateTime) {
         const connection = await pool.getConnection();
@@ -78,6 +82,10 @@ class Asistencia {
         }
     }
 
+    /**
+     * Recupera las marcaciones de un usuario en una fecha del negocio.
+     * @returns {Promise<Array<{tipo: string, fecha_hora: string, hora: string}>>}
+     */
     static async listarDelDia(usuarioId, fecha) {
         const [rows] = await pool.query(
             'SELECT tipo, fecha_hora, TIME_FORMAT(TIME(fecha_hora), ?) AS hora FROM asistencia WHERE usuario_id = ? AND fecha = ? ORDER BY fecha_hora',

@@ -6,6 +6,10 @@ const server = app.listen(config.port, () => {
     console.log(`Servidor corriendo en http://localhost:${config.port}`);
 });
 
+/**
+ * Cierra primero el servidor HTTP y después el pool de MySQL para evitar
+ * solicitudes o conexiones interrumpidas durante el apagado.
+ */
 async function shutdown(signal) {
     console.log(`\n${signal} recibido. Cerrando servidor...`);
 

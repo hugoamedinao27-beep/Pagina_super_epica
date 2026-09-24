@@ -120,6 +120,7 @@ class Usuario {
         }
     }
 
+    /** Obtiene y bloquea el usuario objetivo hasta finalizar la transacción. */
     static async #bloquearUsuario(connection, id) {
         const [rows] = await connection.query(
             'SELECT id, rol, activo FROM usuarios WHERE id = ? FOR UPDATE',
@@ -133,6 +134,7 @@ class Usuario {
         return rows[0];
     }
 
+    /** Garantiza que exista otro administrador activo distinto del indicado. */
     static async #assertAnotherActiveAdmin(connection, excludedId) {
         const [admins] = await connection.query(
             'SELECT id FROM usuarios WHERE rol = ? AND activo = TRUE FOR UPDATE',
