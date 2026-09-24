@@ -22,7 +22,14 @@
         </div>
 
         <div class="tab-content active" id="tab-reportes">
-            <div class="card">
+            <div class="report-tabs" role="tablist" aria-label="Tipos de reporte">
+                <button type="button" class="report-tab-btn active" data-report="late" role="tab" aria-selected="true" aria-controls="report-late">Entradas atrasadas</button>
+                <button type="button" class="report-tab-btn" data-report="early" role="tab" aria-selected="false" aria-controls="report-early">Salidas anticipadas</button>
+                <button type="button" class="report-tab-btn" data-report="absent" role="tab" aria-selected="false" aria-controls="report-absent">Inasistencias</button>
+            </div>
+
+            <section class="report-panel active" id="report-late" role="tabpanel">
+              <div class="card">
                 <h3>Entradas atrasadas (después de las 09:30)</h3>
                 <div class="report-controls">
                     <div class="form-group">
@@ -31,14 +38,24 @@
                     </div>
                     <button type="button" class="btn btn-primary btn-small" id="btnLateReport">Generar</button>
                 </div>
-                <table id="lateTable">
-                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Llegada</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-scroll">
+                    <table id="lateTable">
+                        <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de llegada</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <p class="no-data" id="lateNoData">Seleccione una fecha y presione Generar</p>
-            </div>
+                <div class="report-pagination" id="latePagination" hidden>
+                    <button type="button" class="btn btn-secondary btn-small" id="latePrev">Anterior</button>
+                    <span id="latePageInfo">Página 1 de 1</span>
+                    <button type="button" class="btn btn-secondary btn-small" id="lateNext">Siguiente</button>
+                </div>
+                <p class="report-summary" id="lateSummary" hidden></p>
+              </div>
+            </section>
 
-            <div class="card">
+            <section class="report-panel" id="report-early" role="tabpanel" hidden>
+              <div class="card">
                 <h3>Salidas anticipadas (antes de las 17:30)</h3>
                 <div class="report-controls">
                     <div class="form-group">
@@ -47,14 +64,24 @@
                     </div>
                     <button type="button" class="btn btn-primary btn-small" id="btnEarlyReport">Generar</button>
                 </div>
-                <table id="earlyTable">
-                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de Salida</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-scroll">
+                    <table id="earlyTable">
+                        <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Hora de salida</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <p class="no-data" id="earlyNoData">Seleccione una fecha y presione Generar</p>
-            </div>
+                <div class="report-pagination" id="earlyPagination" hidden>
+                    <button type="button" class="btn btn-secondary btn-small" id="earlyPrev">Anterior</button>
+                    <span id="earlyPageInfo">Página 1 de 1</span>
+                    <button type="button" class="btn btn-secondary btn-small" id="earlyNext">Siguiente</button>
+                </div>
+                <p class="report-summary" id="earlySummary" hidden></p>
+              </div>
+            </section>
 
-            <div class="card">
+            <section class="report-panel" id="report-absent" role="tabpanel" hidden>
+              <div class="card">
                 <h3>Inasistencias</h3>
                 <div class="report-controls">
                     <div class="form-group">
@@ -63,22 +90,33 @@
                     </div>
                     <button type="button" class="btn btn-primary btn-small" id="btnAbsentReport">Generar</button>
                 </div>
-                <table id="absentTable">
-                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-scroll">
+                    <table id="absentTable">
+                        <thead><tr><th>ID</th><th>Nombre</th><th>Email</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <p class="no-data" id="absentNoData">Seleccione una fecha y presione Generar</p>
-            </div>
+                <div class="report-pagination" id="absentPagination" hidden>
+                    <button type="button" class="btn btn-secondary btn-small" id="absentPrev">Anterior</button>
+                    <span id="absentPageInfo">Página 1 de 1</span>
+                    <button type="button" class="btn btn-secondary btn-small" id="absentNext">Siguiente</button>
+                </div>
+                <p class="report-summary" id="absentSummary" hidden></p>
+              </div>
+            </section>
         </div>
 
         <div class="tab-content" id="tab-usuarios">
             <div class="card">
                 <h3>Usuarios del sistema</h3>
                 <button type="button" class="btn btn-success btn-small" id="btnNewUser">+ Crear usuario</button>
-                <table id="usersTable">
-                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-scroll">
+                    <table id="usersTable">
+                        <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

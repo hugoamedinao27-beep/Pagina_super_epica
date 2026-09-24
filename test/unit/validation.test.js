@@ -7,7 +7,8 @@ const {
     validatePassword,
     validateRole,
     validateAttendanceType,
-    validateDate
+    validateDate,
+    validatePagination
 } = require('../../utils/validation');
 
 function assertValidationError(callback, expectedCode) {
@@ -57,4 +58,11 @@ test('acepta fechas reales y rechaza formatos o días imposibles', () => {
     for (const value of ['2026-02-29', '2026-13-01', '23-09-2026', '2026/09/23']) {
         assertValidationError(() => validateDate(value), 'INVALID_DATE');
     }
+});
+
+test('valida páginas y limita el tamaño de los reportes', () => {
+    assert.deepEqual(validatePagination(undefined, undefined), { page: 1, pageSize: 25 });
+    assert.deepEqual(validatePagination('3', '50'), { page: 3, pageSize: 50 });
+    assertValidationError(() => validatePagination('0', '25'), 'INVALID_ID');
+    assertValidationError(() => validatePagination('1', '101'), 'INVALID_PAGE_SIZE');
 });

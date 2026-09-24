@@ -6,9 +6,19 @@ const pool = require('../database/connection');
  * 09:30 es puntual y 17:30 no es una salida anticipada.
  */
 class Reporte {
-    /** @returns {Promise<Array>} Entradas posteriores a las 09:30. */
-    static async atrasos(fecha) {
-        const [rows] = await pool.query(`
+    /** @returns {Promise<object>} Entradas posteriores a las 09:30 y paginación. */
+    static async atrasos(fecha, pagination) {
+        const [[countRow]] = await pool.query(`
+            SELECT COUNT(*) AS total
+            FROM asistencia a
+            JOIN usuarios u ON a.usuario_id = u.id
+            WHERE u.rol = 'empleado'
+              AND a.tipo = 'entrada'
+              AND a.fecha = ?
+              AND TIME(a.fecha_hora) > '09:30:00'
+        `, [fecha]);
+        const pageInfo = this.#buildPageInfo(countRow.total, pagination);
+        const [items] = await pool.query(`
             SELECT u.id, u.nombre, u.email, a.fecha, a.fecha_hora,
                    TIME_FORMAT(TIME(a.fecha_hora), '%H:%i:%s') AS hora_llegada
             FROM asistencia a
@@ -17,14 +27,25 @@ class Reporte {
               AND a.tipo = 'entrada'
               AND a.fecha = ?
               AND TIME(a.fecha_hora) > '09:30:00'
-            ORDER BY a.fecha_hora
-        `, [fecha]);
-        return rows;
+            ORDER BY a.fecha_hora, u.id
+            LIMIT ? OFFSET ?
+        `, [fecha, pageInfo.pageSize, pageInfo.offset]);
+        return this.#createResult(items, pageInfo);
     }
 
-    /** @returns {Promise<Array>} Salidas anteriores a las 17:30. */
-    static async salidasAnticipadas(fecha) {
-        const [rows] = await pool.query(`
+    /** @returns {Promise<object>} Salidas anteriores a las 17:30 y paginación. */
+    static async salidasAnticipadas(fecha, pagination) {
+        const [[countRow]] = await pool.query(`
+            SELECT COUNT(*) AS total
+            FROM asistencia a
+            JOIN usuarios u ON a.usuario_id = u.id
+            WHERE u.rol = 'empleado'
+              AND a.tipo = 'salida'
+              AND a.fecha = ?
+              AND TIME(a.fecha_hora) < '17:30:00'
+        `, [fecha]);
+        const pageInfo = this.#buildPageInfo(countRow.total, pagination);
+        const [items] = await pool.query(`
             SELECT u.id, u.nombre, u.email, a.fecha, a.fecha_hora,
                    TIME_FORMAT(TIME(a.fecha_hora), '%H:%i:%s') AS hora_salida
             FROM asistencia a
@@ -33,14 +54,27 @@ class Reporte {
               AND a.tipo = 'salida'
               AND a.fecha = ?
               AND TIME(a.fecha_hora) < '17:30:00'
-            ORDER BY a.fecha_hora
-        `, [fecha]);
-        return rows;
+            ORDER BY a.fecha_hora, u.id
+            LIMIT ? OFFSET ?
+        `, [fecha, pageInfo.pageSize, pageInfo.offset]);
+        return this.#createResult(items, pageInfo);
     }
 
-    /** @returns {Promise<Array>} Empleados activos sin marcaciones ese día. */
-    static async inasistencias(fecha) {
-        const [rows] = await pool.query(`
+    /** @returns {Promise<object>} Empleados activos sin marcaciones y paginación. */
+    static async inasistencias(fecha, pagination) {
+        const [[countRow]] = await pool.query(`
+            SELECT COUNT(*) AS total
+            FROM usuarios u
+            WHERE u.activo = TRUE
+              AND u.rol = 'empleado'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM asistencia a
+                  WHERE a.usuario_id = u.id AND a.fecha = ?
+              )
+        `, [fecha]);
+        const pageInfo = this.#buildPageInfo(countRow.total, pagination);
+        const [items] = await pool.query(`
             SELECT u.id, u.nombre, u.email
             FROM usuarios u
             WHERE u.activo = TRUE
@@ -50,9 +84,36 @@ class Reporte {
                   FROM asistencia a
                   WHERE a.usuario_id = u.id AND a.fecha = ?
               )
-            ORDER BY u.nombre
-        `, [fecha]);
-        return rows;
+            ORDER BY u.nombre, u.id
+            LIMIT ? OFFSET ?
+        `, [fecha, pageInfo.pageSize, pageInfo.offset]);
+        return this.#createResult(items, pageInfo);
+    }
+
+    static #buildPageInfo(totalValue, { page, pageSize }) {
+        const total = Number(totalValue);
+        const totalPages = Math.ceil(total / pageSize);
+        const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+
+        return {
+            page: currentPage,
+            pageSize,
+            total,
+            totalPages,
+            offset: (currentPage - 1) * pageSize
+        };
+    }
+
+    static #createResult(items, pageInfo) {
+        return {
+            items,
+            pagination: {
+                page: pageInfo.page,
+                pageSize: pageInfo.pageSize,
+                total: pageInfo.total,
+                totalPages: pageInfo.totalPages
+            }
+        };
     }
 }
 

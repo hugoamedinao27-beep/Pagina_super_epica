@@ -211,8 +211,74 @@ describe('integración de la API', { concurrency: false }, () => {
         const early = await admin.request('/api/reports/early?fecha=2026-09-22');
         const absent = await admin.request('/api/reports/absent?fecha=2026-09-22');
 
-        assert.deepEqual(late.body.map((row) => row.id), [fixtures.employeeId]);
-        assert.deepEqual(early.body.map((row) => row.id), [fixtures.employeeId]);
-        assert.deepEqual(absent.body.map((row) => row.id), [fixtures.secondEmployeeId]);
+        assert.deepEqual(late.body.items.map((row) => row.id), [fixtures.employeeId]);
+        assert.deepEqual(early.body.items.map((row) => row.id), [fixtures.employeeId]);
+        assert.deepEqual(absent.body.items.map((row) => row.id), [fixtures.secondEmployeeId]);
+        assert.equal(late.body.pagination.total, 1);
+        assert.equal(late.body.pagination.page, 1);
+    });
+
+    test('pagina reportes numerosos y rechaza límites excesivos', async () => {
+        const [[employee]] = await pool.query(
+            'SELECT contrasena FROM usuarios WHERE id = ?',
+            [fixtures.employeeId]
+        );
+        const userValues = [];
+        const userPlaceholders = [];
+
+        for (let index = 1; index <= 30; index += 1) {
+            userPlaceholders.push('(?, ?, ?, ?)');
+            userValues.push(
+                `Empleado Paginado ${index}`,
+                `paginado${index}@test.local`,
+                employee.contrasena,
+                'empleado'
+            );
+        }
+        await pool.query(
+            `INSERT INTO usuarios (nombre, email, contrasena, rol) VALUES ${userPlaceholders.join(', ')}`,
+            userValues
+        );
+
+        const [paginatedUsers] = await pool.query(
+            "SELECT id FROM usuarios WHERE email LIKE 'paginado%@test.local' ORDER BY id"
+        );
+        const attendanceValues = [];
+        const attendancePlaceholders = [];
+        paginatedUsers.forEach((user, index) => {
+            attendancePlaceholders.push('(?, ?, ?)');
+            attendanceValues.push(
+                user.id,
+                'entrada',
+                `2026-09-21 10:${String(index).padStart(2, '0')}:00`
+            );
+        });
+        await pool.query(
+            `INSERT INTO asistencia (usuario_id, tipo, fecha_hora) VALUES ${attendancePlaceholders.join(', ')}`,
+            attendanceValues
+        );
+
+        const admin = new HttpTestClient(baseUrl);
+        await admin.login('admin@test.local', 'Admin12345');
+        const firstPage = await admin.request('/api/reports/late?fecha=2026-09-21&pagina=1&limite=10');
+        const secondPage = await admin.request('/api/reports/late?fecha=2026-09-21&pagina=2&limite=10');
+        const lastPage = await admin.request('/api/reports/late?fecha=2026-09-21&pagina=99&limite=10');
+        const invalidLimit = await admin.request('/api/reports/late?fecha=2026-09-21&pagina=1&limite=101');
+
+        assert.equal(firstPage.status, 200);
+        assert.equal(firstPage.body.items.length, 10);
+        assert.deepEqual(firstPage.body.pagination, {
+            page: 1,
+            pageSize: 10,
+            total: 30,
+            totalPages: 3
+        });
+        assert.equal(secondPage.body.pagination.page, 2);
+        assert.equal(secondPage.body.items.length, 10);
+        assert.notEqual(firstPage.body.items[0].id, secondPage.body.items[0].id);
+        assert.equal(lastPage.body.pagination.page, 3);
+        assert.equal(lastPage.body.items.length, 10);
+        assert.equal(invalidLimit.status, 400);
+        assert.equal(invalidLimit.body.code, 'INVALID_PAGE_SIZE');
     });
 });

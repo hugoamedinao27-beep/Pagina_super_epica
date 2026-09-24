@@ -46,6 +46,7 @@ function setButtonBusy(button, busy, busyLabel = 'Procesando...') {
         button.dataset.defaultLabel = button.textContent;
     }
     button.disabled = busy;
+    button.dataset.busy = String(busy);
     button.textContent = busy ? busyLabel : button.dataset.defaultLabel;
 }
 
@@ -58,10 +59,82 @@ document.querySelectorAll('.tab-btn').forEach((button) => {
     });
 });
 
+document.querySelectorAll('.report-tab-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.report-tab-btn').forEach((item) => {
+            item.classList.remove('active');
+            item.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.report-panel').forEach((panel) => {
+            panel.classList.remove('active');
+            panel.hidden = true;
+        });
+
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        const panel = document.getElementById(`report-${button.dataset.report}`);
+        panel.hidden = false;
+        panel.classList.add('active');
+    });
+});
+
 const currentDate = todayInBusinessTimeZone();
 document.getElementById('lateDate').value = currentDate;
 document.getElementById('earlyDate').value = currentDate;
 document.getElementById('absentDate').value = currentDate;
+
+const REPORT_PAGE_SIZE = 25;
+const reportConfigs = {
+    late: {
+        input: 'lateDate',
+        table: 'lateTable',
+        noData: 'lateNoData',
+        endpoint: '/api/reports/late',
+        fields: ['id', 'nombre', 'email', 'hora_llegada'],
+        generate: 'btnLateReport',
+        pagination: 'latePagination',
+        previous: 'latePrev',
+        next: 'lateNext',
+        pageInfo: 'latePageInfo',
+        summary: 'lateSummary'
+    },
+    early: {
+        input: 'earlyDate',
+        table: 'earlyTable',
+        noData: 'earlyNoData',
+        endpoint: '/api/reports/early',
+        fields: ['id', 'nombre', 'email', 'hora_salida'],
+        generate: 'btnEarlyReport',
+        pagination: 'earlyPagination',
+        previous: 'earlyPrev',
+        next: 'earlyNext',
+        pageInfo: 'earlyPageInfo',
+        summary: 'earlySummary'
+    },
+    absent: {
+        input: 'absentDate',
+        table: 'absentTable',
+        noData: 'absentNoData',
+        endpoint: '/api/reports/absent',
+        fields: ['id', 'nombre', 'email'],
+        generate: 'btnAbsentReport',
+        pagination: 'absentPagination',
+        previous: 'absentPrev',
+        next: 'absentNext',
+        pageInfo: 'absentPageInfo',
+        summary: 'absentSummary'
+    }
+};
+
+Object.values(reportConfigs).forEach((config) => {
+    Object.assign(config, {
+        loaded: false,
+        page: 1,
+        totalPages: 0,
+        total: 0,
+        itemCount: 0
+    });
+});
 
 async function loadUser() {
     const user = await requestJson('/api/current-user');
@@ -72,64 +145,103 @@ async function loadUser() {
     document.getElementById('userName').textContent = user.nombre;
 }
 
-async function loadReport({ button, input, table, noData, endpoint, fields }) {
-    const date = document.getElementById(input).value;
+function renderReport(config, rows) {
+    const tbody = document.querySelector(`#${config.table} tbody`);
+    const emptyMessage = document.getElementById(config.noData);
+    tbody.replaceChildren();
+
+    rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        config.fields.forEach((field) => tr.appendChild(createCell(row[field])));
+        tbody.appendChild(tr);
+    });
+
+    emptyMessage.textContent = rows.length === 0
+        ? 'No se encontraron resultados para la fecha seleccionada.'
+        : '';
+    emptyMessage.hidden = rows.length > 0;
+}
+
+function updateReportPagination(config) {
+    const pagination = document.getElementById(config.pagination);
+    const summary = document.getElementById(config.summary);
+
+    if (!config.loaded || config.total === 0) {
+        pagination.hidden = true;
+        summary.hidden = true;
+        return;
+    }
+
+    pagination.hidden = false;
+    summary.hidden = false;
+    document.getElementById(config.pageInfo).textContent = `Página ${config.page} de ${config.totalPages}`;
+    document.getElementById(config.previous).disabled = config.page <= 1;
+    document.getElementById(config.next).disabled = config.page >= config.totalPages;
+
+    const firstResult = ((config.page - 1) * REPORT_PAGE_SIZE) + 1;
+    const lastResult = firstResult + config.itemCount - 1;
+    summary.textContent = `Mostrando ${firstResult}–${lastResult} de ${config.total} resultados`;
+}
+
+function resetReport(config) {
+    document.querySelector(`#${config.table} tbody`).replaceChildren();
+    const emptyMessage = document.getElementById(config.noData);
+    emptyMessage.textContent = 'Seleccione una fecha y presione Generar';
+    emptyMessage.hidden = false;
+    Object.assign(config, {
+        loaded: false,
+        page: 1,
+        totalPages: 0,
+        total: 0,
+        itemCount: 0
+    });
+    updateReportPagination(config);
+}
+
+async function loadReport(config, requestedPage, triggerButton) {
+    const date = document.getElementById(config.input).value;
     if (!date) {
         showToast('Selecciona una fecha válida.', 'error');
         return;
     }
 
-    const tbody = document.querySelector(`#${table} tbody`);
-    const emptyMessage = document.getElementById(noData);
-    setButtonBusy(button, true, 'Generando...');
+    setButtonBusy(triggerButton, true, 'Cargando...');
 
     try {
-        const rows = await requestJson(`${endpoint}?fecha=${encodeURIComponent(date)}`);
-        tbody.replaceChildren();
-
-        rows.forEach((row) => {
-            const tr = document.createElement('tr');
-            fields.forEach((field) => tr.appendChild(createCell(row[field])));
-            tbody.appendChild(tr);
+        const query = new URLSearchParams({
+            fecha: date,
+            pagina: String(requestedPage),
+            limite: String(REPORT_PAGE_SIZE)
         });
-
-        emptyMessage.textContent = rows.length === 0
-            ? 'No se encontraron resultados para la fecha seleccionada.'
-            : '';
-        emptyMessage.hidden = rows.length > 0;
+        const result = await requestJson(`${config.endpoint}?${query}`);
+        renderReport(config, result.items);
+        Object.assign(config, {
+            loaded: true,
+            page: result.pagination.page,
+            totalPages: result.pagination.totalPages,
+            total: result.pagination.total,
+            itemCount: result.items.length
+        });
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
-        setButtonBusy(button, false);
+        setButtonBusy(triggerButton, false);
+        updateReportPagination(config);
     }
 }
 
-document.getElementById('btnLateReport').addEventListener('click', (event) => loadReport({
-    button: event.currentTarget,
-    input: 'lateDate',
-    table: 'lateTable',
-    noData: 'lateNoData',
-    endpoint: '/api/reports/late',
-    fields: ['id', 'nombre', 'email', 'hora_llegada']
-}));
-
-document.getElementById('btnEarlyReport').addEventListener('click', (event) => loadReport({
-    button: event.currentTarget,
-    input: 'earlyDate',
-    table: 'earlyTable',
-    noData: 'earlyNoData',
-    endpoint: '/api/reports/early',
-    fields: ['id', 'nombre', 'email', 'hora_salida']
-}));
-
-document.getElementById('btnAbsentReport').addEventListener('click', (event) => loadReport({
-    button: event.currentTarget,
-    input: 'absentDate',
-    table: 'absentTable',
-    noData: 'absentNoData',
-    endpoint: '/api/reports/absent',
-    fields: ['id', 'nombre', 'email']
-}));
+Object.values(reportConfigs).forEach((config) => {
+    document.getElementById(config.generate).addEventListener('click', (event) => {
+        loadReport(config, 1, event.currentTarget);
+    });
+    document.getElementById(config.previous).addEventListener('click', (event) => {
+        loadReport(config, config.page - 1, event.currentTarget);
+    });
+    document.getElementById(config.next).addEventListener('click', (event) => {
+        loadReport(config, config.page + 1, event.currentTarget);
+    });
+    document.getElementById(config.input).addEventListener('change', () => resetReport(config));
+});
 
 const modal = document.getElementById('userModal');
 const form = document.getElementById('userForm');

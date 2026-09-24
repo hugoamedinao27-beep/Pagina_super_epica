@@ -111,6 +111,29 @@ function validateDate(value) {
     return value;
 }
 
+/**
+ * Valida los parámetros usados por los listados paginados.
+ * El límite máximo evita respuestas excesivamente grandes.
+ */
+function validatePagination(pageValue, pageSizeValue) {
+    const page = pageValue === undefined
+        ? 1
+        : validateId(pageValue, 'La página');
+    const pageSize = pageSizeValue === undefined
+        ? 25
+        : validateId(pageSizeValue, 'El límite');
+
+    if (pageSize > 100) {
+        throw new ApplicationError(
+            400,
+            'El límite no puede superar 100 resultados por página.',
+            'INVALID_PAGE_SIZE'
+        );
+    }
+
+    return { page, pageSize };
+}
+
 module.exports = {
     validateId,
     validateName,
@@ -118,5 +141,6 @@ module.exports = {
     validatePassword,
     validateRole,
     validateAttendanceType,
-    validateDate
+    validateDate,
+    validatePagination
 };

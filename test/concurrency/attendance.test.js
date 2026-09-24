@@ -15,11 +15,13 @@ let pool;
 let server;
 let baseUrl;
 let employeeId;
+let Asistencia;
 
 before(async () => {
     await createTestDatabase(environment);
     const app = require('../../app');
     pool = require('../../database/connection');
+    Asistencia = require('../../models/Asistencia');
     ({ employeeId } = await resetFixtures(pool));
     ({ server, baseUrl } = await listen(app));
 });
@@ -30,7 +32,7 @@ after(async () => {
     await dropTestDatabase(environment);
 });
 
-test('ocho solicitudes simultáneas guardan una sola entrada y una sola salida', async () => {
+test('ocho operaciones simultáneas guardan una sola entrada y una sola salida', async () => {
     const employee = new HttpTestClient(baseUrl);
     const login = await employee.login('empleado@test.local', 'Empleado12345');
     assert.equal(login.status, 200);
@@ -45,18 +47,23 @@ test('ocho solicitudes simultáneas guardan una sola entrada y una sola salida',
     assert.equal(entryResponses.filter((response) => response.status === 409).length, 7);
 
     await pool.query(
-        'UPDATE asistencia SET fecha_hora = DATE_SUB(fecha_hora, INTERVAL 2 MINUTE) WHERE usuario_id = ? AND tipo = ?',
-        [employeeId, 'entrada']
+        'UPDATE asistencia SET fecha_hora = ? WHERE usuario_id = ? AND tipo = ?',
+        ['2026-09-20 08:00:00', employeeId, 'entrada']
     );
 
-    const exitResponses = await Promise.all(
-        Array.from({ length: 8 }, () => employee.request('/api/attendance/mark', {
-            method: 'POST',
-            body: { tipo: 'salida' }
+    const exitResults = await Promise.allSettled(
+        Array.from({ length: 8 }, () => Asistencia.registrar(employeeId, 'salida', {
+            date: '2026-09-20',
+            time: '17:00:00',
+            dateTime: '2026-09-20 17:00:00'
         }))
     );
-    assert.equal(exitResponses.filter((response) => response.status === 201).length, 1);
-    assert.equal(exitResponses.filter((response) => response.status === 409).length, 7);
+    assert.equal(exitResults.filter((result) => result.status === 'fulfilled').length, 1);
+    const rejectedExits = exitResults.filter((result) => result.status === 'rejected');
+    assert.equal(rejectedExits.length, 7);
+    rejectedExits.forEach((result) => {
+        assert.equal(result.reason.statusCode, 409);
+    });
 
     const [[counts]] = await pool.query(`
         SELECT
